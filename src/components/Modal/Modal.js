@@ -1,49 +1,44 @@
 import PropTypes from 'prop-types';
-import { Component } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ModalOverlay, ModalContent, ModalButtonClose } from './Modal.styled';
 import { BsXLg } from 'react-icons/bs';
 
-export class Modal extends Component {
+export const Modal = ({ onClose, children }) => {
   
-  static propTypes = {
-    onClose: PropTypes.func.isRequired,
-  };
+  useEffect(() => {
+    const handleKeyDown = evt => {
+      if (evt.key === "Escape") {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown); 
+  }, [onClose]);
 
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleKeyDown);
-  }
-  
-  componentWillUnmount() {
-    document.removeEventListener("keydown", this.handleKeyDown);
-  }
-  
-  handleKeyDown = evt => {
-    if (evt.key === "Escape") {
-      this.props.onClose();
-    }
-  }
-  
-  handleOverlayClick = evt => {
+  const handleOverlayClick = evt => {
     evt.stopPropagation();
     if (evt.currentTarget === evt.target) {
-      this.props.onClose();
+      onClose();
     }
-  }
+  };
 
-  render() {
-    return createPortal(
-      <ModalOverlay onClick={this.handleOverlayClick}>
-        <ModalContent>
-          <ModalButtonClose type="button" onClick={this.props.onClose}>
-            <BsXLg size="12"/>
-          </ModalButtonClose>
+  return createPortal(
+    <ModalOverlay onClick={handleOverlayClick}>
+      <ModalContent>
+        <ModalButtonClose type="button" onClick={onClose}>
+          <BsXLg size="12"/>
+        </ModalButtonClose>
 
-          {this.props.children}
+        {children}
 
-        </ModalContent>
-      </ModalOverlay>,
+      </ModalContent>
+    </ModalOverlay>,
     document.getElementById('modal-root'));
-  }
+};
+
+Modal.propTypes = {
+  onClose: PropTypes.func.isRequired,
 };
 

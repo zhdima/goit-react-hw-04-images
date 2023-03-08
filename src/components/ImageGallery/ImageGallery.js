@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ImageGalleryList, ErrorInfo } from './ImageGallery.styled';
 import { ImageGalleryItem } from '../ImageGalleryItem/ImageGalleryItem';
 import { ButtonLoadMore } from '../ButtonLoadMore/ButtonLoadMore';
@@ -19,45 +19,38 @@ const Status = {
   ERROR: 'error'
 }
 
-export class ImageGallery extends Component {
+export const ImageGallery = ({ searchQuery }) => {
 
-  static propTypes = {
-    searchQuery: PropTypes.string.isRequired,
-  };
+  const [results, setResults] = useState([]);
+  const [status, setStatus] = useState(Status.IDLE);
+  const [error, setError] = useState('');
 
-  state = {
-    results: [],
-    status: Status.IDLE,
-    error: '',
-  }
+  useEffect(() => {
+    if (!searchQuery) return;
+    searchService.setNewQuery(searchQuery, IMAGES_PER_PAGE);
+    performQuery();
+  }, [searchQuery]);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.props.searchQuery !== prevProps.searchQuery) {
-      searchService.setNewQuery(this.props.searchQuery, IMAGES_PER_PAGE);
-      this.performQuery();
-    }
-    
-    if ((this.state.results !== prevState.results) && (searchService.page > 1)) {
+  useEffect(() => {
+    if(searchService.page > 1) {
       window.scrollTo({
-        left: 0,
-        top: document.body.scrollHeight,
-        behavior: "smooth",
+      left: 0,
+      top: document.body.scrollHeight,
+      behavior: "smooth",
       });
-    }  
-  }
+    }
+  }, [results]);
 
-  performQuery = async() => {
+  const performQuery = async() => {
     try {
-      this.setState({ status: Status.LOADING });
+      setStatus(Status.LOADING);
 
       const data = await searchService.getNextData();
 
       if (!data || (data.length === 0)) {
-        this.setState({
-          results: [],
-          status: Status.ERROR,
-          error: 'Sorry, there are no images matching your search query. Please try again.'
-        });
+        setResults([]);
+        setError('Sorry, there are no images matching your search query. Please try again.');
+        setStatus(Status.ERROR);
         return;
       }
         
@@ -65,47 +58,43 @@ export class ImageGallery extends Component {
         toast.success(`We found ${searchService.resultsQty} images.`);
       }
 
-      this.setState(prevState => ({
-        results: (searchService.page === 1) ? [...data] : [...prevState.results, ...data],
-        status: searchService.isLastPage() ? Status.IS_END : Status.IS_MORE,
-      }));
+      setResults(prevResults => (searchService.page === 1) ? [...data] : [...prevResults, ...data]);
+      setStatus(searchService.isLastPage() ? Status.IS_END : Status.IS_MORE);
 
     } catch (err) {
-        this.setState({
-          results: [],
-          status: Status.ERROR,
-          error: String(err)
-        });
+        setResults([]);
+        setError(String(err));
+        setStatus(Status.ERROR);
     }
   }
   
-  onLoadMore = () => {
+  const onLoadMore = () => {
     searchService.incrementPage();
-    this.performQuery();
-  }
+    performQuery();
+  };
 
-  render() {
-    const { results, status, error } = this.state;
+  return (
+    <>
+      <ImageGalleryList>
+        {results.map(item => (
+          <ImageGalleryItem key={item.id} item={item} />
+        ))}
+      </ImageGalleryList>
+      {status === Status.LOADING &&
+        <Loader />
+      }
+      {status === Status.IS_MORE &&
+        <ButtonLoadMore onClick={onLoadMore} />
+      }
+      {status === Status.ERROR &&
+        <ErrorInfo>{error}</ErrorInfo>
+      }
+      <Toaster position="top-right"/>
+    </>
+  );
+};
 
-    return (
-      <>
-        <ImageGalleryList>
-          {results.map(item => (
-            <ImageGalleryItem key={item.id} item={item} />
-          ))}
-        </ImageGalleryList>
-        {status === Status.LOADING &&
-          <Loader />
-        }
-        {status === Status.IS_MORE &&
-          <ButtonLoadMore onClick={this.onLoadMore} />
-        }
-        {status === Status.ERROR &&
-          <ErrorInfo>{error}</ErrorInfo>
-        }
-        <Toaster position="top-right"/>
-      </>
-    );
-  }  
+ImageGallery.propTypes = {
+  searchQuery: PropTypes.string.isRequired,
 };
 
