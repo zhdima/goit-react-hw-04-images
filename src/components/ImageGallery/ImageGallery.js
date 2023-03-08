@@ -34,9 +34,9 @@ export const ImageGallery = ({ searchQuery }) => {
   useEffect(() => {
     if(searchService.page > 1) {
       window.scrollTo({
-      left: 0,
-      top: document.body.scrollHeight,
-      behavior: "smooth",
+        left: 0,
+        top: document.body.scrollHeight,
+        behavior: "smooth",
       });
     }
   }, [results]);
