@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { ImageGalleryList, ErrorInfo } from './ImageGallery.styled';
 import { ImageGalleryItem } from '../ImageGalleryItem/ImageGalleryItem';
 import { ButtonLoadMore } from '../ButtonLoadMore/ButtonLoadMore';
@@ -31,7 +31,7 @@ export const ImageGallery = ({ searchQuery }) => {
     performQuery();
   }, [searchQuery]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if(searchService.page > 1) {
       window.scrollTo({
         left: 0,
